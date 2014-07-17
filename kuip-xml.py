@@ -87,13 +87,17 @@ def insert_translation_message(message, parentNode, doc):
     messageNode.appendChild(translationStateNode)
 
 def output_ts(unique_names_list, exist_names):
-    f = open(os.path.join(sys.argv[2], "SkInternalTranslator.ts"), mode='r', encoding='utf-8')
+    f = None
     doc = None
     try:
-        doc = minidom.parse(f)
+        f = open(os.path.join(sys.argv[2], "SkInternalTranslator.ts"), mode='r', encoding='utf-8')
+        try:
+            doc = minidom.parse(f)
+        except:
+            doc = minidom.Document()
+        f.close()
     except:
         doc = minidom.Document()
-    f.close()
     rootNode = doc.documentElement
     if rootNode == None:
         rootNode = doc.createElement('TS')
