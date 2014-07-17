@@ -1,6 +1,8 @@
 from xml.sax import *
 from xml.dom import minidom 
 import io
+import sys
+import os
 
 class TrieNode(object):  
     def __init__(self):  
@@ -85,7 +87,7 @@ def insert_translation_message(message, parentNode, doc):
     messageNode.appendChild(translationStateNode)
 
 def output_ts(unique_names_list, exist_names):
-    f = open("c:\\SkInternalTranslator.ts", mode='r', encoding='utf-8')
+    f = open(os.path.join(sys.argv[2], "SkInternalTranslator.ts"), mode='r', encoding='utf-8')
     doc = None
     try:
         doc = minidom.parse(f)
@@ -118,7 +120,7 @@ def output_ts(unique_names_list, exist_names):
         if exist_names.search(line) == None:
             insert_translation_message(line, contextNode, doc)
             newCount = newCount + 1
-    f = open("c:\\SkInternalTranslator.ts", mode='w', encoding='utf-8')
+    f = open(os.path.join(sys.argv[2], "SkInternalTranslator.ts"), mode='w', encoding='utf-8')
     doc.writexml(f, "", "", "", "utf-8")
     f.close()
     print('add new', newCount)
@@ -126,7 +128,7 @@ def output_ts(unique_names_list, exist_names):
 def scan_ts(scanHandler):
     data = ''
     try:
-        xml_file = open("c:\\SkInternalTranslator.ts", mode='r', encoding='utf-8')
+        xml_file = open(os.path.join(sys.argv[2], "SkInternalTranslator.ts"), mode='r', encoding='utf-8')
         data = xml_file.read().strip()
         parser = make_parser()
         parser.setContentHandler(scanHandler)
@@ -137,35 +139,36 @@ def scan_ts(scanHandler):
     except:
         pass
 
-if(__name__=="__main__"):
-    data=""
-    handler = KuipSaxHandler()
-    print('begin parse')
-    with open("c:\\common.kuip", mode='r', encoding='utf-8') as xml_file:
-        data = xml_file.read().strip()
-        parse_kuip(data, handler)
-    with open("c:\\wpp.kuip", mode='r', encoding='utf-8') as xml_file:
-        data = xml_file.read().strip()
-        parse_kuip(data, handler)
-    with open("c:\\wps.kuip", mode='r', encoding='utf-8') as xml_file:
-        data = xml_file.read().strip()
-        parse_kuip(data, handler)
-    with open("c:\\et.kuip", mode='r', encoding='utf-8') as xml_file:
-        data = xml_file.read().strip()
-        parse_kuip(data, handler)
-    print('done')
-    print('begin unique')
-    trie = Trie()
-    uniqueList = []
-    for line in handler.resultList:
-        line = line.strip()
-        if trie.search(line) == None:
-            trie.add(line)
-            uniqueList.append(line)
-    print('done')
-    scanHandler = TSSaxHandler()
-    scan_ts(scanHandler)
-    print('output ts')
-    output_ts(uniqueList, scanHandler.result)
-    print('done')
+if len(sys.argv) != 3:
+    sys.exit()
+data=""
+handler = KuipSaxHandler()
+print('begin parse')
+with open(os.path.join(sys.argv[1], "common.kuip"), mode='r', encoding='utf-8') as xml_file:
+    data = xml_file.read().strip()
+    parse_kuip(data, handler)
+with open(os.path.join(sys.argv[1], "wpp.kuip"), mode='r', encoding='utf-8') as xml_file:
+    data = xml_file.read().strip()
+    parse_kuip(data, handler)
+with open(os.path.join(sys.argv[1], "wps.kuip"), mode='r', encoding='utf-8') as xml_file:
+    data = xml_file.read().strip()
+    parse_kuip(data, handler)
+with open(os.path.join(sys.argv[1], "et.kuip"), mode='r', encoding='utf-8') as xml_file:
+    data = xml_file.read().strip()
+    parse_kuip(data, handler)
+print('done')
+print('begin unique')
+trie = Trie()
+uniqueList = []
+for line in handler.resultList:
+    line = line.strip()
+    if trie.search(line) == None:
+        trie.add(line)
+        uniqueList.append(line)
+print('done')
+scanHandler = TSSaxHandler()
+scan_ts(scanHandler)
+print('output ts')
+output_ts(uniqueList, scanHandler.result)
+print('done')
     
