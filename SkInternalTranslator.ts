@@ -1537,67 +1537,67 @@
     </message>
     <message>
         <source>HeadShadow</source>
-        <translation type="unfinished"></translation>
+        <translation>头部阴影</translation>
     </message>
     <message>
         <source>HeadBorder</source>
-        <translation type="unfinished"></translation>
+        <translation>头部边框</translation>
     </message>
     <message>
         <source>TabStop</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <source>TableHandleBg</source>
-        <translation type="unfinished"></translation>
+        <translation>表格把手背景</translation>
     </message>
     <message>
         <source>TableHandlePoint</source>
-        <translation type="unfinished"></translation>
+        <translation>表格把手点</translation>
     </message>
     <message>
         <source>DeepBackgroud</source>
-        <translation type="unfinished"></translation>
+        <translation>背景(深)</translation>
     </message>
     <message>
         <source>LightBackgroud</source>
-        <translation type="unfinished"></translation>
+        <translation>背景(浅)</translation>
     </message>
     <message>
         <source>BorderHoverInside</source>
-        <translation type="unfinished"></translation>
+        <translation>边框悬停内部</translation>
     </message>
     <message>
         <source>BorderHoverOutside</source>
-        <translation type="unfinished"></translation>
+        <translation>边框悬停外部</translation>
     </message>
     <message>
         <source>AdsorbLine</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <source>ButtonBackgroud</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮背景</translation>
     </message>
     <message>
         <source>ButtonHoverBackgroud</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮鼠标悬停背景</translation>
     </message>
     <message>
         <source>ButtonBorderInside</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮内边框</translation>
     </message>
     <message>
         <source>ButtonBorderHoverInside</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮内边框鼠标悬停</translation>
     </message>
     <message>
         <source>ButtonBorderOutside</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮外边框</translation>
     </message>
     <message>
         <source>ButtonBorderHoverOutside</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮外边框鼠标悬停</translation>
     </message>
     <message>
         <source>FHBorderHoverOutside</source>
@@ -1609,67 +1609,67 @@
     </message>
     <message>
         <source>tableBorder</source>
-        <translation type="unfinished"></translation>
+        <translation>表格边框</translation>
     </message>
     <message>
         <source>HighlightBorder</source>
-        <translation type="unfinished"></translation>
+        <translation>高亮边框</translation>
     </message>
     <message>
         <source>AdjustLine</source>
-        <translation type="unfinished"></translation>
+        <translation>调整线</translation>
     </message>
     <message>
         <source>Button</source>
-        <translation type="unfinished"></translation>
+        <translation>按钮</translation>
     </message>
     <message>
         <source>font</source>
-        <translation type="unfinished"></translation>
+        <translation>字体</translation>
     </message>
     <message>
         <source>border-ruler-hover</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-边框-鼠标悬停状态</translation>
     </message>
     <message>
         <source>border-ruler-down</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-边框-鼠标按钮状态</translation>
     </message>
     <message>
         <source>border-ruler-check</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-边框-选中状态</translation>
     </message>
     <message>
         <source>background-ruler</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-背景</translation>
     </message>
     <message>
         <source>background-ruler-hover</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-背景-悬停状态</translation>
     </message>
     <message>
         <source>background-ruler-down</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-背景-鼠标按下状态</translation>
     </message>
     <message>
         <source>background-ruler-check</source>
-        <translation type="unfinished"></translation>
+        <translation>标尺-背景-选中状态</translation>
     </message>
     <message>
         <source>inside-broder</source>
-        <translation type="unfinished"></translation>
+        <translation>内边框</translation>
     </message>
     <message>
         <source>leftLine</source>
-        <translation type="unfinished"></translation>
+        <translation>左线</translation>
     </message>
     <message>
         <source>rightLine</source>
-        <translation type="unfinished"></translation>
+        <translation>右线</translation>
     </message>
     <message>
         <source>background-down-ex</source>
-        <translation type="unfinished"></translation>
+        <translation>背景-鼠标按下</translation>
     </message>
     <message>
         <source>repair-00</source>
@@ -1793,23 +1793,23 @@
     </message>
     <message>
         <source>bottom-area</source>
-        <translation type="unfinished"></translation>
+        <translation>底部区域</translation>
     </message>
     <message>
         <source>bottom-area-clr</source>
-        <translation type="unfinished"></translation>
+        <translation>底部区域颜色</translation>
     </message>
     <message>
         <source>separate-line</source>
-        <translation type="unfinished"></translation>
+        <translation>分割线</translation>
     </message>
     <message>
         <source>line-color</source>
-        <translation type="unfinished"></translation>
+        <translation>线颜色</translation>
     </message>
     <message>
         <source>line-shadow</source>
-        <translation type="unfinished"></translation>
+        <translation>线阴影</translation>
     </message>
     <message>
         <source>fill-down</source>
@@ -1817,71 +1817,71 @@
     </message>
     <message>
         <source>border-check</source>
-        <translation type="unfinished"></translation>
+        <translation>边框-选中</translation>
     </message>
     <message>
         <source>SplitHandle-border</source>
-        <translation type="unfinished"></translation>
+        <translation>分割把手-边框</translation>
     </message>
     <message>
         <source>SplitHandle-background</source>
-        <translation type="unfinished"></translation>
+        <translation>分割把手-背景</translation>
     </message>
     <message>
         <source>SplitLine-background</source>
-        <translation type="unfinished"></translation>
+        <translation>分割线-背景</translation>
     </message>
     <message>
         <source>welcome-label</source>
-        <translation type="unfinished"></translation>
+        <translation>欢迎标签</translation>
     </message>
     <message>
         <source>content-label</source>
-        <translation type="unfinished"></translation>
+        <translation>内容标签</translation>
     </message>
     <message>
         <source>link-label</source>
-        <translation type="unfinished"></translation>
+        <translation>超链接标签</translation>
     </message>
     <message>
         <source>link-deep-label</source>
-        <translation type="unfinished"></translation>
+        <translation>超链接标签(深)</translation>
     </message>
     <message>
         <source>time-label</source>
-        <translation type="unfinished"></translation>
+        <translation>时间标签</translation>
     </message>
     <message>
         <source>close-hover</source>
-        <translation type="unfinished"></translation>
+        <translation>关闭-悬停</translation>
     </message>
     <message>
         <source>angle</source>
-        <translation type="unfinished"></translation>
+        <translation>角度</translation>
     </message>
     <message>
         <source>angle-disabled</source>
-        <translation type="unfinished"></translation>
+        <translation>角度-不可用状态</translation>
     </message>
     <message>
         <source>content-shadow</source>
-        <translation type="unfinished"></translation>
+        <translation>内容-阴影</translation>
     </message>
     <message>
         <source>embed-out</source>
-        <translation type="unfinished"></translation>
+        <translation>嵌入-外</translation>
     </message>
     <message>
         <source>embed-in</source>
-        <translation type="unfinished"></translation>
+        <translation>嵌入-内</translation>
     </message>
     <message>
         <source>embed-background</source>
-        <translation type="unfinished"></translation>
+        <translation>嵌入-背景</translation>
     </message>
     <message>
         <source>leftArrow</source>
-        <translation type="unfinished"></translation>
+        <translation>左箭头</translation>
     </message>
     <message>
         <source>Header</source>
@@ -1929,15 +1929,15 @@
     </message>
     <message>
         <source>SelectedBorder</source>
-        <translation type="unfinished"></translation>
+        <translation>选中边框</translation>
     </message>
     <message>
         <source>SelectedBackgroud</source>
-        <translation type="unfinished"></translation>
+        <translation>选中背景</translation>
     </message>
     <message>
         <source>FlashBorder</source>
-        <translation type="unfinished"></translation>
+        <translation>Flash边框</translation>
     </message>
     <message>
         <source>filterChecked</source>
@@ -1977,23 +1977,23 @@
     </message>
     <message>
         <source>tab-bottom-hover</source>
-        <translation type="unfinished"></translation>
+        <translation>标签-底部-悬停</translation>
     </message>
     <message>
         <source>tab-bottom-normal</source>
-        <translation type="unfinished"></translation>
+        <translation>标签-底部-正常</translation>
     </message>
     <message>
         <source>content-border</source>
-        <translation type="unfinished"></translation>
+        <translation>内容-边框</translation>
     </message>
     <message>
         <source>content-background</source>
-        <translation type="unfinished"></translation>
+        <translation>内容-背景</translation>
     </message>
     <message>
         <source>treeheader-background</source>
-        <translation type="unfinished"></translation>
+        <translation>树头部-背景</translation>
     </message>
     <message>
         <source>color-00</source>
