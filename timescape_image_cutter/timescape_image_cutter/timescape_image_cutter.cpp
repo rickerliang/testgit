@@ -82,6 +82,13 @@ void timescape_image_cutter::setCuttingPos(double x, double y)
 
 void timescape_image_cutter::textChanged(const QString& text)
 {
+	bool ret = false;
+	text.toDouble(&ret);
+	if (!ret)
+	{
+		return ;
+	}
+
 	if (ui.m_radioButtonBegin->isChecked())
 	{
 		m_posX = ui.m_beginX->text().toDouble();
