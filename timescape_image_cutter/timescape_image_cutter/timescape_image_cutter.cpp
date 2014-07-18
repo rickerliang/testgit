@@ -20,6 +20,10 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	m_scale = ui.m_beginScale->text().toDouble();
 
 	setBackground(QPixmap("c:\\psb.jpg"));
+
+	connect(ui.m_beginScale, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
+	connect(ui.m_beginX, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
+	connect(ui.m_beginY, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 }
 
 timescape_image_cutter::~timescape_image_cutter()
@@ -36,7 +40,6 @@ void timescape_image_cutter::previewDrawHandler(
 	int picWidth = ui.m_previewWidget->height() * m_backgroundPicRatio;
 	int picHeight = ui.m_previewWidget->width() / m_backgroundPicRatio;
 
-
 	if (renderTargetWidth / m_backgroundPicRatio > renderTargetHeight)
  	{
 		p.drawPixmap(
@@ -49,6 +52,14 @@ void timescape_image_cutter::previewDrawHandler(
 			0, (ui.m_previewWidget->height() - picHeight) / 2, 
 			ui.m_previewWidget->width(), picHeight, m_backgroundPic);
  	}
+
+	QPoint center(
+		(renderTargetWidth / 2) * (1 + m_posX), 
+		(renderTargetHeight / 2) * (1 + m_posY));
+	int destWidth = picWidth * m_scale;
+	int destHeight = picHeight * m_scale;
+	p.setPen(QColor(Qt::black));
+	p.drawRect(center.x() - destWidth / 2, center.y() - destHeight / 2, destWidth, destHeight);
 }
 
 void timescape_image_cutter::setBackground(const QPixmap& p)
@@ -67,4 +78,21 @@ void timescape_image_cutter::setCuttingPos(double x, double y)
 {
 	m_posX = x;
 	m_posY = y;
+}
+
+void timescape_image_cutter::textChanged(const QString& text)
+{
+	if (ui.m_radioButtonBegin->isChecked())
+	{
+		m_posX = ui.m_beginX->text().toDouble();
+		m_posY = ui.m_beginY->text().toDouble();
+		m_scale = ui.m_beginScale->text().toDouble();
+	}
+	else
+	{
+		m_posX = ui.m_endX->text().toDouble();
+		m_posY = ui.m_endY->text().toDouble();
+		m_scale = ui.m_endScale->text().toDouble();
+	}	
+	update();
 }

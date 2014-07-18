@@ -17,6 +17,9 @@ public:
 	void setScale(double s);
 	void setCuttingPos(double x, double y);
 
+private slots:
+	void textChanged(const QString& text);
+
 private:
 	void previewDrawHandler(std::function<void()> supperHandler, QPaintEvent* event);
 
