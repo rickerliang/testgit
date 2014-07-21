@@ -157,14 +157,14 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="m_endScale">
+          <widget class="QLabel" name="label_4">
            <property name="text">
             <string>scale</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLineEdit" name="lineEdit_4">
+          <widget class="QLineEdit" name="m_endScale">
            <property name="text">
             <string>1</string>
            </property>
