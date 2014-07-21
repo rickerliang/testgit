@@ -59,6 +59,15 @@
     <ClCompile Include="customdrawwidget.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cutter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_cutter.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_cutter.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="timescape_image_cutter.ui">
@@ -71,6 +80,9 @@
       <Filter>Source Files</Filter>
     </CustomBuild>
     <CustomBuild Include="timescape_image_cutter.h">
+      <Filter>Source Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="cutter.h">
       <Filter>Source Files</Filter>
     </CustomBuild>
   </ItemGroup>

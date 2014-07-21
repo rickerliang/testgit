@@ -2,7 +2,11 @@
 
 #include <cassert>
 
+#include <QFileDialog>
+#include <QDir>
 #include <QPainter>
+
+#include "cutter.h"
 
 timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags | Qt::MSWindowsFixedSizeDialogHint | Qt::Dialog)
@@ -11,6 +15,7 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	, m_posY(0)
 	, m_backgroundPic()
 	, m_scale(1)
+	, m_files()
 {
 	ui.setupUi(this);
 	ui.m_previewWidget->setCustomizeDrawHandler(
@@ -21,8 +26,6 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	m_posY = ui.m_beginY->text().toDouble();
 	m_scale = ui.m_beginScale->text().toDouble();
 
-	setBackground(QPixmap("c:\\psb.jpg"));
-
 	connect(ui.m_beginScale, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui.m_beginX, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui.m_beginY, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
@@ -30,6 +33,8 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	connect(ui.m_endY, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui.m_endScale, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui.buttonGroup, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(buttonClicked(QAbstractButton*)));
+	connect(ui.m_inputButton, SIGNAL(clicked(bool)), this, SLOT(inputButtonClicked(bool)));
+	connect(ui.m_buttonGo, SIGNAL(clicked(bool)), this, SLOT(goButtonClicked(bool)));
 }
 
 timescape_image_cutter::~timescape_image_cutter()
@@ -77,17 +82,6 @@ void timescape_image_cutter::setBackground(const QPixmap& p)
 		double(m_backgroundPic.width()) / double(m_backgroundPic.height());
 }
 
-// void timescape_image_cutter::setScale(double s)
-// {
-// 	m_scale = s;
-// }
-// 
-// void timescape_image_cutter::setCuttingPos(double x, double y)
-// {
-// 	m_posX = x;
-// 	m_posY = y;
-// }
-
 void timescape_image_cutter::textChanged(const QString& text)
 {
 	bool ret = false;
@@ -120,4 +114,31 @@ void timescape_image_cutter::retrieveScaleParameter()
 		m_posY = ui.m_endY->text().toDouble();
 		m_scale = ui.m_endScale->text().toDouble();
 	}
+}
+
+void timescape_image_cutter::inputButtonClicked(bool checked)
+{
+	QString d = QFileDialog::getExistingDirectory(
+		this, tr("Open Directory"), "", 
+		QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+	
+	if (d.isEmpty())
+	{
+		return ;
+	}
+	QDir dir(d);
+	QStringList l;
+	l.append("*.jpg");
+	l.append("*.jpeg");
+	m_files = dir.entryInfoList(l, QDir::Files, QDir::Name);
+	if (m_files.size() > 0)
+	{
+		setBackground(QPixmap((m_files)[0].absoluteFilePath()));
+	}
+}
+
+void timescape_image_cutter::goButtonClicked(bool checked)
+{
+	cutter c(this);
+	c.cut(m_files);
 }
