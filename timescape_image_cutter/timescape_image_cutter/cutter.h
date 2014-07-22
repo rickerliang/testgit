@@ -9,16 +9,18 @@ class cutter : public QObject
 	Q_OBJECT
 
 public:
-	cutter(QObject *parent);
+	cutter();
 	~cutter();
 
-	void cut(QFileInfoList& l);
+	void cut(QFileInfoList* l, const QString& outputDir, const QString& inputDir);
+	void asyncCut(QFileInfoList* l, const QString& outputDir, const QString& inputDir);
+	void emitTick(int count);
 
 signals:
-	void tick();
+	void tick(int count);
 
 private:
-	
+	QFileInfoList m_files;
 };
 
 #endif // CUTTER_H

@@ -3,7 +3,6 @@
 #include <cassert>
 
 #include <QFileDialog>
-#include <QDir>
 #include <QPainter>
 
 #include "cutter.h"
@@ -16,6 +15,9 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	, m_backgroundPic()
 	, m_scale(1)
 	, m_files()
+	, m_cutter()
+	, m_outputDir("\\output")
+	, m_inputDir()
 {
 	ui.setupUi(this);
 	ui.m_previewWidget->setCustomizeDrawHandler(
@@ -26,6 +28,8 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	m_posY = ui.m_beginY->text().toDouble();
 	m_scale = ui.m_beginScale->text().toDouble();
 
+	ui.m_outputLabel->setText(m_outputDir);
+
 	connect(ui.m_beginScale, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui.m_beginX, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
 	connect(ui.m_beginY, SIGNAL(textChanged(const QString&)), this, SLOT(textChanged(const QString&)));
@@ -35,6 +39,7 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	connect(ui.buttonGroup, SIGNAL(buttonClicked(QAbstractButton*)), this, SLOT(buttonClicked(QAbstractButton*)));
 	connect(ui.m_inputButton, SIGNAL(clicked(bool)), this, SLOT(inputButtonClicked(bool)));
 	connect(ui.m_buttonGo, SIGNAL(clicked(bool)), this, SLOT(goButtonClicked(bool)));
+	connect(&m_cutter, SIGNAL(tick(int)), this, SLOT(tick(int)));
 }
 
 timescape_image_cutter::~timescape_image_cutter()
@@ -126,7 +131,11 @@ void timescape_image_cutter::inputButtonClicked(bool checked)
 	{
 		return ;
 	}
-	QDir dir(d);
+	m_inputDir = d;
+	ui.m_inputLabel->setText(m_inputDir);
+	m_outputDir = d + "\\output";
+	ui.m_outputLabel->setText(m_outputDir);
+	QDir dir(m_inputDir);
 	QStringList l;
 	l.append("*.jpg");
 	l.append("*.jpeg");
@@ -139,6 +148,26 @@ void timescape_image_cutter::inputButtonClicked(bool checked)
 
 void timescape_image_cutter::goButtonClicked(bool checked)
 {
-	cutter c(this);
-	c.cut(m_files);
+	ui.m_progressBar->setValue(0);
+	ui.m_progressBar->setMaximum(m_files.size());
+	m_cutter.asyncCut(&m_files, m_outputDir, m_inputDir);
+}
+
+void timescape_image_cutter::tick(int count)
+{
+	ui.m_progressBar->setValue(ui.m_progressBar->value() + count);
+}
+
+void timescape_image_cutter::outputButtonClicked(bool checked)
+{
+	QString d = QFileDialog::getExistingDirectory(
+		this, tr("Open Directory"), "", 
+		QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+
+	if (d.isEmpty())
+	{
+		return ;
+	}
+	m_outputDir = d;
+	ui.m_outputLabel->setText(m_outputDir);
 }

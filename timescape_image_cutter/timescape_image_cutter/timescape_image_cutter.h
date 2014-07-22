@@ -7,6 +7,7 @@
 #include <QFileInfo>
 #include <QtGui/QMainWindow>
 #include "ui_timescape_image_cutter.h"
+#include "cutter.h"
 
 class timescape_image_cutter : public QMainWindow
 {
@@ -21,7 +22,9 @@ private slots:
 	void textChanged(const QString& text);
 	void buttonClicked(QAbstractButton* button);
 	void inputButtonClicked(bool checked);
+	void outputButtonClicked(bool checked);
 	void goButtonClicked(bool checked);
+	void tick(int count);
 
 private:
 	void previewDrawHandler(std::function<void()> supperHandler, QPaintEvent* event);
@@ -34,6 +37,9 @@ private:
 	QPixmap m_backgroundPic;
 	double m_scale;
 	QFileInfoList m_files;
+	cutter m_cutter;
+	QString m_outputDir;
+	QString m_inputDir;
 };
 
 #endif // TIMESCAPE_IMAGE_CUTTER_H

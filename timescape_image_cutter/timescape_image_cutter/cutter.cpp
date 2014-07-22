@@ -1,7 +1,11 @@
 #include "cutter.h"
 
+#include <functional>
+
 #include <QDebug>
+#include <QDir>
 #include <QImage>
+#include <QtConcurrentRun>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 
@@ -10,30 +14,34 @@ namespace
 class CutterFunctor
 {
 public:
-	CutterFunctor(QFileInfoList& l)
+	CutterFunctor(QFileInfoList& l, cutter& c, const QString& outputDir)
 		: m_l(l)
+		, m_cutter(c)
+		, m_outputDir(outputDir)
 	{
 
 	}
 
 	void operator()(const tbb::blocked_range<size_t>& r) const
 	{
-		QFileInfoList& l = m_l;
+		const QFileInfoList& l = m_l;
 		for(size_t i = r.begin(); i != r.end( ); ++i)
 		{
-			qDebug() << m_l[i].absoluteFilePath();
-			QImage p(m_l[i].absoluteFilePath());
-			p.save("G:\\output\\" + m_l[i].fileName());
+			QImage p(l[i].absoluteFilePath());
+			p.save(m_outputDir.absoluteFilePath(l[i].fileName()));
 		}
+		m_cutter.emitTick(r.size());
 	}
 
 private:
-	QFileInfoList& m_l;
+	const QFileInfoList& m_l;
+	cutter& m_cutter;
+	QDir m_outputDir;
 };
 }
 
-cutter::cutter(QObject *parent)
-	: QObject(parent)
+cutter::cutter()
+	: QObject(nullptr)
 {
 
 }
@@ -43,9 +51,21 @@ cutter::~cutter()
 
 }
 
-void cutter::cut(QFileInfoList& l)
+void cutter::asyncCut(QFileInfoList* l, const QString& outputDir, const QString& inputDir)
 {
+	QtConcurrent::run(std::bind(&cutter::cut, this, l, outputDir, inputDir));
+}
+
+void cutter::emitTick(int count)
+{
+	emit tick(count);
+}
+
+void cutter::cut(QFileInfoList* l, const QString& outputDir, const QString& intputDir)
+{
+	QDir d("");
+	d.mkpath(outputDir);
 	tbb::parallel_for(
-		tbb::blocked_range<size_t>(0, l.size()), CutterFunctor(l), 
+		tbb::blocked_range<size_t>(0, l->size()), CutterFunctor(*l, *this, outputDir), 
 		tbb::auto_partitioner());
 }

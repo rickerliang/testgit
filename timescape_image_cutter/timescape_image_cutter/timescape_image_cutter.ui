@@ -185,12 +185,6 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLineEdit" name="lineEdit_5"/>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLineEdit" name="lineEdit_6"/>
-       </item>
        <item row="1" column="1">
         <widget class="QPushButton" name="m_outputButton">
          <property name="text">
@@ -206,12 +200,29 @@
         </widget>
        </item>
        <item row="2" column="0">
-        <widget class="QProgressBar" name="progressBar">
+        <widget class="QProgressBar" name="m_progressBar">
          <property name="value">
           <number>24</number>
          </property>
          <property name="textVisible">
-          <bool>false</bool>
+          <bool>true</bool>
+         </property>
+         <property name="textDirection">
+          <enum>QProgressBar::TopToBottom</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="m_inputLabel">
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="0">
+        <widget class="QLabel" name="m_outputLabel">
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>
