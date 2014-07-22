@@ -12,7 +12,7 @@ public:
 	cutter(QObject *parent);
 	~cutter();
 
-	void cut(QFileInfoList l);
+	void cut(QFileInfoList& l);
 
 signals:
 	void tick();

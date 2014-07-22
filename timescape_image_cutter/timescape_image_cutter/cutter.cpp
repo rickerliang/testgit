@@ -1,6 +1,7 @@
 #include "cutter.h"
 
 #include <QDebug>
+#include <QImage>
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 
@@ -21,6 +22,8 @@ public:
 		for(size_t i = r.begin(); i != r.end( ); ++i)
 		{
 			qDebug() << m_l[i].absoluteFilePath();
+			QImage p(m_l[i].absoluteFilePath());
+			p.save("G:\\output\\" + m_l[i].fileName());
 		}
 	}
 
@@ -40,7 +43,7 @@ cutter::~cutter()
 
 }
 
-void cutter::cut(QFileInfoList l)
+void cutter::cut(QFileInfoList& l)
 {
 	tbb::parallel_for(
 		tbb::blocked_range<size_t>(0, l.size()), CutterFunctor(l), 
