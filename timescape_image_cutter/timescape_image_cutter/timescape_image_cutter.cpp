@@ -7,6 +7,14 @@
 
 #include "cutter.h"
 
+namespace
+{
+float lerp(double v0, double v1, double t) 
+{
+	return (1-t)*v0 + t*v1;
+}
+}
+
 timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags | Qt::MSWindowsFixedSizeDialogHint | Qt::Dialog)
 	, m_backgroundPicRatio(16 / 9)
@@ -18,6 +26,7 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	, m_cutter()
 	, m_outputDir("\\output")
 	, m_inputDir()
+	, m_intputParameter()
 {
 	ui.setupUi(this);
 	ui.m_previewWidget->setCustomizeDrawHandler(
@@ -40,6 +49,10 @@ timescape_image_cutter::timescape_image_cutter(QWidget *parent, Qt::WFlags flags
 	connect(ui.m_inputButton, SIGNAL(clicked(bool)), this, SLOT(inputButtonClicked(bool)));
 	connect(ui.m_buttonGo, SIGNAL(clicked(bool)), this, SLOT(goButtonClicked(bool)));
 	connect(&m_cutter, SIGNAL(tick(int)), this, SLOT(tick(int)));
+
+	m_cutter.setRetriever(
+		std::bind(&timescape_image_cutter::getCropParameter, this, 
+		std::placeholders::_1, std::placeholders::_2));
 }
 
 timescape_image_cutter::~timescape_image_cutter()
@@ -144,10 +157,18 @@ void timescape_image_cutter::inputButtonClicked(bool checked)
 	{
 		setBackground(QPixmap((m_files)[0].absoluteFilePath()));
 	}
+	update();
 }
 
 void timescape_image_cutter::goButtonClicked(bool checked)
 {
+	m_intputParameter.m_beginPosX = ui.m_beginX->text().toDouble();
+	m_intputParameter.m_beginPosY = ui.m_beginY->text().toDouble();
+	m_intputParameter.m_beginScale = ui.m_beginScale->text().toDouble();
+	m_intputParameter.m_endPosX = ui.m_endX->text().toDouble();
+	m_intputParameter.m_endPosY = ui.m_endY->text().toDouble();
+	m_intputParameter.m_endScale = ui.m_endScale->text().toDouble();
+
 	ui.m_progressBar->setValue(0);
 	ui.m_progressBar->setMaximum(m_files.size());
 	m_cutter.asyncCut(&m_files, m_outputDir, m_inputDir);
@@ -170,4 +191,18 @@ void timescape_image_cutter::outputButtonClicked(bool checked)
 	}
 	m_outputDir = d;
 	ui.m_outputLabel->setText(m_outputDir);
+}
+
+void timescape_image_cutter::getCropParameter(int index, CropParameter& out)
+{
+	double t = double(index) / m_files.size();
+	CropParameterLerp(m_intputParameter, t, out);
+}
+
+void timescape_image_cutter::CropParameterLerp( 
+	const InputParameter& input, double t, CropParameter& output)
+{
+	output.m_posX = lerp(input.m_beginPosX, input.m_endPosX, t);
+	output.m_posY = lerp(input.m_beginPosY, input.m_endPosY, t);
+	output.m_scale = lerp(input.m_beginScale, input.m_endScale, t);
 }
