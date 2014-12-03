@@ -25,7 +25,9 @@ public:
 
 	void operator()(const tbb::blocked_range<size_t>& r) const
 	{
+		qDebug() << r.size();
 		const QFileInfoList& l = m_l;
+		QImage cropped;
 		for(size_t i = r.begin(); i != r.end( ); ++i)
 		{
 			if (!m_cutter.getRetriever())
@@ -46,8 +48,10 @@ public:
 				s.width() * ((crop.m_posX + 1.0) / 2.0), 
 				s.height() * ((crop.m_posY + 1.0) / 2.0));
 			r.moveTo(center.x() - w / 2, center.y() - h / 2);
-			QImage cropped = p.copy(r);
-			cropped.save(m_outputDir.absoluteFilePath(l[i].fileName()));
+			cropped = p.copy(r);
+			assert(!cropped.isNull());
+			QString outputFileName = m_outputDir.absoluteFilePath(l[i].fileName());
+			cropped.save(outputFileName);
 		}
 		m_cutter.emitTick(r.size());
 	}
