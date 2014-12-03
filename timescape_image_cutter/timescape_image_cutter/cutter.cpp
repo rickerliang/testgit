@@ -42,7 +42,9 @@ public:
 			double w = s.width() * crop.m_scale;
 			double h = s.height() * crop.m_scale;
 			QRect r(0, 0, w, h);
-			QPoint center(s.width() * ((crop.m_posX + 1.0) / 2.0), s.height() * ((crop.m_posY + 1.0) / 2.0));
+			QPoint center(
+				s.width() * ((crop.m_posX + 1.0) / 2.0), 
+				s.height() * ((crop.m_posY + 1.0) / 2.0));
 			r.moveTo(center.x() - w / 2, center.y() - h / 2);
 			QImage cropped = p.copy(r);
 			cropped.save(m_outputDir.absoluteFilePath(l[i].fileName()));
