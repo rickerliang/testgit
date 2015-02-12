@@ -1,12 +1,20 @@
 #!/usr/bin/env ruby
 #encoding=UTF-8 
+require 'api'
+require 'set.rb'
+
+State = {'0' => 'Uninit', '1' => 'Initialized', '2' => 'Loading', '3' => 'Loaded', '4' => 'Invalid'}
+
+class String
+  def to_path(end_slash=false)
+    "#{'/' if self[0]=='\\'}#{self.split('\\').join('/')}#{'/' if end_slash}" 
+  end 
+end
 
 def main
-	puts "----------rubytest loaded----"
+	puts "----------rubytest loaded---------------"
 	puts Encoding.default_internal
 	puts Encoding.default_external
-
-	State = {'0' => 'Uninit', '1' => 'Initialized', '2' => 'Loading', '3' => 'Loaded', '4' => 'Invalid'}
 
 	pluginMgr =  $kxApp.getPluginMgr
 	puts pluginMgr.class
@@ -20,6 +28,7 @@ def main
 	end
 	out_put_plugins_info(plugins)
 	check_plugins_state(plugins)
+	puts "----------rubytest complete-------------"
 end
 
 class PluginLoadingObserver < Qt::Object
@@ -37,16 +46,26 @@ class PluginLoadingObserver < Qt::Object
 	end
 	
 	def loadFailed()
-		puts 'load fail @@@@@@@@ ' + @plugin.getProp('name').toString
+		puts 'force load fail @@@@@@@@ ' + @plugin.getProp('name').toString
 	end
 end
 
 def check_plugin_module(plugin)
+	modules = retrieve_process_module_snapshot
+	path = plugin.localPath.to_s + '/' + plugin.getProp("name").toString + '.dll'
+	path = path.downcase().to_path()
+	modules.each do |modulePath|
+		if modulePath.eql?(path)
+			return 
+		end
+	end
+	puts 'module fail @@@@@@@@ ' + plugin.getProp('name').toString
+	puts path.encoding()
 end
 
 def check_plugin_state(plugin)
 	if 3 != plugin.state
-		puts 'load fail @@@@@@@@ ' + plugin.getProp('name').toString 
+		puts 'state fail @@@@@@@@ ' + plugin.getProp('name').toString 
 	else
 		check_plugin_module(plugin)
 	end
@@ -85,6 +104,59 @@ def out_put_plugins_info(plugins)
 		puts 'mode ' + plugin.getProp('mode').toString
 		puts 'type ' + plugin.getProp('type').toString
 	end
+end
+
+#def retrieve_process_module_snapshot
+#	getCurrentProcess = Win32API.new('kernel32', 'GetCurrentProcess', ['V'], 'L')
+#	process = getCurrentProcess.call()
+#	enumProcessModulesEx = Win32API.new(
+#		'kernel32', 'K32EnumProcessModulesEx', ['L', 'P', 'L', 'P', 'L'], 'L')
+#	moduleListSizeBuffer = "\0" * 4
+#	ret = enumProcessModulesEx.call(process, nil, 0, moduleListSizeBuffer, 0x03)
+#	moduleListSize = moduleListSizeBuffer.unpack('L')[0]
+#	moduleCount = moduleListSize / 4  
+#	moduleListBuffer = "\0" * moduleListSize
+#	ret = enumProcessModulesEx.call(
+#	process, moduleListBuffer, moduleListSize, moduleListSizeBuffer, 0x03)
+#	moduleList = moduleListBuffer.unpack('L' * moduleCount)  
+#	getModuleFileName = Win32API.new(
+#		'kernel32', 'GetModuleFileName', ['L', 'P', 'L'], 'L')  
+#	fileNameSet = Set.new()
+#	moduleList.each do |moduleHandle|
+#		fileName = "\0" * 1000
+#		getModuleFileName.call(moduleHandle, fileName, 1000)
+#		fileNameSet << fileName
+#	end  
+#	return fileNameSet
+#end
+
+def retrieve_process_module_snapshot
+#  puts "----------retrieve_process_module_snapshot loaded----"
+  getCurrentProcess = Win32::API.new('GetCurrentProcess', 'V', 'I', 'kernel32')
+#  puts getCurrentProcess.class
+  process = getCurrentProcess.call()
+#  puts process
+  enumProcessModulesEx = Win32::API.new(
+    'K32EnumProcessModulesEx', 'LPLPL', 'L', 'kernel32')
+  moduleListSizeBuffer = "\0" * 4
+  ret = enumProcessModulesEx.call(process, nil, 0, moduleListSizeBuffer, 0x03)
+  moduleListSize = moduleListSizeBuffer.unpack('L')[0]
+  moduleCount = moduleListSize / 4  
+#  puts moduleCount
+  moduleListBuffer = "\0" * moduleListSize
+  ret = enumProcessModulesEx.call(
+    process, moduleListBuffer, moduleListSize, moduleListSizeBuffer, 0x03)
+  moduleList = moduleListBuffer.unpack('L' * moduleCount)  
+  getModuleFileName = Win32::API.new(
+    'GetModuleFileName', 'LPL', 'L', 'kernel32')  
+  fileNameSet = Array.new()
+  moduleList.each do |moduleHandle|
+    fileName = "\0" * 1000
+    getModuleFileName.call(moduleHandle, fileName, 1000)
+    fileNameSet << fileName.downcase().to_path()
+	puts fileName.downcase().to_path().encoding()
+  end  
+  return fileNameSet
 end
 
 main
