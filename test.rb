@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 #encoding=UTF-8 
-require 'api'
+
+puts "----------rubytest loaded---------------"
+
+require 'win32api'
 require 'set.rb'
 
 State = {'0' => 'Uninit', '1' => 'Initialized', '2' => 'Loading', '3' => 'Loaded', '4' => 'Invalid'}
@@ -12,19 +15,19 @@ class String
 end
 
 def main
-	puts "----------rubytest loaded---------------"
-	puts Encoding.default_internal
-	puts Encoding.default_external
+	puts "----------rubytest main---------------"
+#	puts Encoding.default_internal
+#	puts Encoding.default_external
 
 	pluginMgr =  $kxApp.getPluginMgr
 	puts pluginMgr.class
 	puts pluginMgr.loaded
-	pluginCount = pluginMgr.getPluginCount
+	pluginCount = pluginMgr.count
 	puts 'plugin count ' + pluginCount.to_s
 	
 	plugins = []
 	for i in 0..pluginCount-1
-		plugins << pluginMgr.getPlugin(i)
+		plugins << pluginMgr.getPluginByIdx(i)
 	end
 	out_put_plugins_info(plugins)
 	check_plugins_state(plugins)
@@ -53,14 +56,16 @@ end
 def check_plugin_module(plugin)
 	modules = retrieve_process_module_snapshot
 	path = plugin.localPath.to_s + '/' + plugin.getProp("name").toString + '.dll'
-	path = path.downcase().to_path()
+	path = path.downcase().to_path().encode('UTF-8')
 	modules.each do |modulePath|
+#		puts modulePath.encoding()
 		if modulePath.eql?(path)
+			puts 'check module ' + plugin.getProp('name').toString + ' OK'
 			return 
 		end
 	end
-	puts 'module fail @@@@@@@@ ' + plugin.getProp('name').toString
-	puts path.encoding()
+	puts 'check module  ' + plugin.getProp('name').toString + ' @@@@ Fail @@@@'
+	puts path
 end
 
 def check_plugin_state(plugin)
@@ -148,13 +153,16 @@ def retrieve_process_module_snapshot
     process, moduleListBuffer, moduleListSize, moduleListSizeBuffer, 0x03)
   moduleList = moduleListBuffer.unpack('L' * moduleCount)  
   getModuleFileName = Win32::API.new(
-    'GetModuleFileName', 'LPL', 'L', 'kernel32')  
+    'GetModuleFileNameA', 'LPL', 'L', 'kernel32')  
   fileNameSet = Array.new()
   moduleList.each do |moduleHandle|
     fileName = "\0" * 1000
-    getModuleFileName.call(moduleHandle, fileName, 1000)
-    fileNameSet << fileName.downcase().to_path()
-	puts fileName.downcase().to_path().encoding()
+	fileName.force_encoding('GB2312')
+    length = getModuleFileName.call(moduleHandle, fileName, 1000)
+	n = fileName.downcase().to_path().encode('UTF-8')[0, length]	
+    fileNameSet << n
+#	puts n
+#	puts n.length
   end  
   return fileNameSet
 end
