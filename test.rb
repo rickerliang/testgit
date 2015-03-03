@@ -14,11 +14,8 @@ class String
   end 
 end
 
-def main
+def runtest
 	puts "----------rubytest main---------------"
-#	puts Encoding.default_internal
-#	puts Encoding.default_external
-
 	pluginMgr =  $kxApp.getPluginMgr
 	puts pluginMgr.class
 	puts pluginMgr.loaded
@@ -32,6 +29,20 @@ def main
 	out_put_plugins_info(plugins)
 	check_plugins_state(plugins)
 	puts "----------rubytest complete-------------"
+end
+
+class TestLaunch < Qt::Object
+	slots 'timeout()'
+	def initialize(parent)
+		super(parent)
+		
+		puts '--------------TestLaunch--------------'
+		Qt::Timer.singleShot(10000, self, SLOT('timeout()'));
+	end
+	
+	def timeout()
+		runtest()
+	end
 end
 
 class PluginLoadingObserver < Qt::Object
@@ -58,7 +69,6 @@ def check_plugin_module(plugin)
 	path = plugin.localPath.to_s + '/' + plugin.getProp("name").toString + '.dll'
 	path = path.downcase().to_path().encode('UTF-8')
 	modules.each do |modulePath|
-#		puts modulePath.encoding()
 		if modulePath.eql?(path)
 			puts 'check module ' + plugin.getProp('name').toString + ' OK'
 			return 
@@ -111,43 +121,15 @@ def out_put_plugins_info(plugins)
 	end
 end
 
-#def retrieve_process_module_snapshot
-#	getCurrentProcess = Win32API.new('kernel32', 'GetCurrentProcess', ['V'], 'L')
-#	process = getCurrentProcess.call()
-#	enumProcessModulesEx = Win32API.new(
-#		'kernel32', 'K32EnumProcessModulesEx', ['L', 'P', 'L', 'P', 'L'], 'L')
-#	moduleListSizeBuffer = "\0" * 4
-#	ret = enumProcessModulesEx.call(process, nil, 0, moduleListSizeBuffer, 0x03)
-#	moduleListSize = moduleListSizeBuffer.unpack('L')[0]
-#	moduleCount = moduleListSize / 4  
-#	moduleListBuffer = "\0" * moduleListSize
-#	ret = enumProcessModulesEx.call(
-#	process, moduleListBuffer, moduleListSize, moduleListSizeBuffer, 0x03)
-#	moduleList = moduleListBuffer.unpack('L' * moduleCount)  
-#	getModuleFileName = Win32API.new(
-#		'kernel32', 'GetModuleFileName', ['L', 'P', 'L'], 'L')  
-#	fileNameSet = Set.new()
-#	moduleList.each do |moduleHandle|
-#		fileName = "\0" * 1000
-#		getModuleFileName.call(moduleHandle, fileName, 1000)
-#		fileNameSet << fileName
-#	end  
-#	return fileNameSet
-#end
-
 def retrieve_process_module_snapshot
-#  puts "----------retrieve_process_module_snapshot loaded----"
   getCurrentProcess = Win32::API.new('GetCurrentProcess', 'V', 'I', 'kernel32')
-#  puts getCurrentProcess.class
   process = getCurrentProcess.call()
-#  puts process
   enumProcessModulesEx = Win32::API.new(
     'K32EnumProcessModulesEx', 'LPLPL', 'L', 'kernel32')
   moduleListSizeBuffer = "\0" * 4
   ret = enumProcessModulesEx.call(process, nil, 0, moduleListSizeBuffer, 0x03)
   moduleListSize = moduleListSizeBuffer.unpack('L')[0]
   moduleCount = moduleListSize / 4  
-#  puts moduleCount
   moduleListBuffer = "\0" * moduleListSize
   ret = enumProcessModulesEx.call(
     process, moduleListBuffer, moduleListSize, moduleListSizeBuffer, 0x03)
@@ -161,12 +143,8 @@ def retrieve_process_module_snapshot
     length = getModuleFileName.call(moduleHandle, fileName, 1000)
 	n = fileName.downcase().to_path().encode('UTF-8')[0, length]	
     fileNameSet << n
-#	puts n
-#	puts n.length
   end  
   return fileNameSet
 end
 
-main
-
-#ksoplugin 5699AA9F9B07233E5ED53EE599A90218802148E02F30358C6301E738729CDB8D66BB997E2D829CCEEDE9C7015C064F2BDF03D924DAEF98EB20D33A8352FBB6AD
+TestLaunch = TestLaunch.new($kxApp)
