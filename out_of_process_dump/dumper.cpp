@@ -1,4 +1,4 @@
-// dumper.cpp : Defines the entry point for the console application.
+﻿// dumper.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
@@ -8,10 +8,6 @@
 
 #include <windows.h>
 #include "dbghelp/dbghelp.h"
-
-#ifndef MiniDumpIgnoreInaccessibleMemory
-#define MiniDumpIgnoreInaccessibleMemory 0x00020000
-#endif
 
 namespace
 {
@@ -38,8 +34,24 @@ struct DumpeeArg
 	bool FullDump;
 };
 
+/* 带上
+unloaded module list，检查注入dll
+process thread data，记录peb，teb，特别是teb，记录线程栈大小及起始终止地址，用于栈破坏时辅佐栈重建
+full memory info，记录堆地址段信息，用于检查地址属性，例如 !address 命令
+*/
+MINIDUMP_TYPE DumpTypeMini = 
+	static_cast<MINIDUMP_TYPE>(MiniDumpNormal | MiniDumpWithUnloadedModules 
+	| MiniDumpWithProcessThreadData | MiniDumpWithFullMemoryInfo);
 
-void dump(const DumpeeArg& arg)
+/*
+minidump基础上加上堆内存
+*/
+MINIDUMP_TYPE DumpTypeFull = 
+	static_cast<MINIDUMP_TYPE>(MiniDumpNormal | MiniDumpWithUnloadedModules 
+	| MiniDumpWithProcessThreadData | MiniDumpWithFullMemory | MiniDumpWithFullMemoryInfo);
+
+
+BOOL dump(const DumpeeArg& arg)
 {
 	std::cout << "dumper: dumpee pid " << arg.PID << std::endl;
 	std::cout << "dumper: dumpee exp " << arg.Exp << std::endl;
@@ -50,30 +62,31 @@ void dump(const DumpeeArg& arg)
 	HANDLE process = 
 		::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE, 
 			FALSE, arg.PID);
-// 	HANDLE file = ::CreateFileW(
-// 		L"dump.dmp", GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 
-// 		FILE_ATTRIBUTE_NORMAL,  NULL);
-
 	std::cout << "dumper: dumpee process handle : " << process << std::endl;
-//	std::cout << "dumper: dumpee file handle : " << file << std::endl;
+	if (process == NULL)
+	{
+		return -1;
+	}
 	
 	MINIDUMP_EXCEPTION_INFORMATION info = {};
 	info.ClientPointers = TRUE;
 	info.ThreadId = arg.TID;
 	info.ExceptionPointers = reinterpret_cast<PEXCEPTION_POINTERS>(arg.Exp);
-	MINIDUMP_TYPE dumpType = 
-		static_cast<MINIDUMP_TYPE>(
-		arg.FullDump ? (MiniDumpNormal | MiniDumpWithUnloadedModules | MiniDumpWithProcessThreadData | MiniDumpWithFullMemory | MiniDumpIgnoreInaccessibleMemory)
-		: (MiniDumpNormal | MiniDumpWithUnloadedModules | MiniDumpWithProcessThreadData));
 
 	BOOL dumpSuccess = ::MiniDumpWriteDump(
 		process, arg.PID, arg.DumpFile, 
-		dumpType,
+		arg.FullDump ? DumpTypeFull : DumpTypeMini,
 		(arg.Exp == 0 ? NULL : &info), NULL, NULL);
 	std::cout << "dumper: dump result " << dumpSuccess << std::endl;
 
 	::CloseHandle(process);
-	::CloseHandle(arg.DumpFile);
+
+	if (dumpSuccess)
+	{
+		return 1;
+	}
+
+	return -2;
 }
 
 bool getArgValue(const wchar_t* arg, const wchar_t* argKey, std::wstring* outArgValue)
@@ -188,8 +201,19 @@ bool parseDumpeeArg(int argc, wchar_t* argv[], DumpeeArg* outDumpeeArg)
 }
 
 /*
-dumpĳ�����̣�ָ������id(����)���߳�id(���룬���û�д�0)���쳣ָ��(���룬���û�д�0)��dump�ļ����(���룬��Ҫ�ÿɼ̳з�ʽ���ļ�)���Ƿ�fulldump(��ѡ)
-dumper.exe -pid=%d -tid=%d -exp=%d -h=%d -f
+dump某个进程
+dumper.exe 
+	-pid=%d		必须，指定进程id
+	-tid=%d		必须，线程id，如果没有传0
+	-exp=%d		必须，异常指针，如果没有传0
+	-h=%d		必须，dump文件句柄，需要用可继承方式打开文件，程序不负责文件创建、打开、关闭
+	-f			可选，指定fulldump，否则默认minidump
+
+返回值
+1	成功
+0	参数个数、格式错误
+-1	无法打开目标进程
+-2	minidumpwritedump函数调用失败
 */
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -200,7 +224,8 @@ int _tmain(int argc, _TCHAR* argv[])
 		DumpeeArg arg = {};
 		if (parseDumpeeArg(argc, argv, &arg))
 		{
-			dump(arg);
+			BOOL ret = dump(arg);
+			return ret;
 		}		
 	}
 

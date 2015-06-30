@@ -1,4 +1,4 @@
-// dumpee.cpp : Defines the entry point for the console application.
+﻿// dumpee.cpp : Defines the entry point for the console application.
 //
 
 #include "stdafx.h"
@@ -38,6 +38,8 @@ LONG WINAPI ExceptionFilter(
 	swprintf_s(
 		sarg, L"%s -pid=%s -tid=%s -exp=%s -h=%s", L"dumper.exe", spid, 
 		sthreadid, sexceptionpointers, dumpfilehandle);
+// 	swprintf_s(
+// 		sarg, L"%s -pid=9856 -tid=0 -exp=0 -h=%s -f", L"dumper.exe", dumpfilehandle);
 	std::wcout << L"dumpee sarg " << sarg << std::endl; 
 
 	STARTUPINFO si = {};
@@ -56,6 +58,12 @@ LONG WINAPI ExceptionFilter(
 		std::wcout << L"wait" << std::endl;
 		DWORD waitResult = ::WaitForSingleObject(pi.hProcess, INFINITE);
 		std::wcout << L"wait result : " << waitResult << std::endl;
+
+		DWORD exitCode = 0xcccccccc;
+		::GetExitCodeProcess(pi.hProcess, &exitCode);
+		std::wcout << L"exit code : " << static_cast<int>(exitCode) << std::endl;
+
+		::CloseHandle(pi.hProcess);
 	}
 
 	return EXCEPTION_EXECUTE_HANDLER;
