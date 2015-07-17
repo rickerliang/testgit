@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <QList>
+#include <QFileInfo>
 #include <Psapi.h>
 
 #include "xmlreport.h"
@@ -19,17 +20,15 @@ typedef BOOL (_stdcall *PMINIDUMPWRITE)(HANDLE,
 	PMINIDUMP_USER_STREAM_INFORMATION,
 	PMINIDUMP_CALLBACK_INFORMATION);
 
-const wchar_t* const ArgProcessID = L"-pid=";
-const wchar_t* const ArgThreadID = L"-tid=";
-const wchar_t* const ArgExceptionPointer = L"-exp=";
-const wchar_t* const ArgFullDump = L"-f";
-const wchar_t* const ArgDumpFileHandle = L"-h=";
+const char* const ArgProcessID = "-pid=";
+const char* const ArgThreadID = "-tid=";
+const char* const ArgExceptionPointer = "-exp=";
+const char* const ArgFullDump = "-f=";
 
 const int ParseResultPID = 0x1;
 const int ParseResultTID = 0x2;
 const int ParseResultExp = 0x4;
 const int ParseResultFullDump = 0x8; 
-const int ParseResultDumpFileHandle = 0x10;
 
 const int MandatoryArgCount = 4;
 
@@ -55,28 +54,26 @@ bool createReportXml(
 {
 	if (modules == NULL)
 	{
-		return ;
+		return false;
 	}
 
 	EXCEPTION_POINTERS pointers = {};
 	SIZE_T readed = 0;
-	if (::ReadProcessMemory(targetProcess, p, &pointers, sizeof(pointers), &readed))
+	if (::ReadProcessMemory(targetProcess, p, &pointers, sizeof(pointers), &readed) == 0)
 	{
 		return false;
 	}
 
 	ER_EXCEPTIONRECORD exceptionRecord;
-	if (XmlReport::createExceptionRecordNode(
-		targetProcess, pointers.ExceptionRecord, exceptionRecord))
+	ULONG64 targetProcessExceptionAddr = 0;
+	if (!XmlReport::createExceptionRecordNode(
+		targetProcess, pointers.ExceptionRecord, exceptionRecord, targetProcessExceptionAddr))
 	{
 		return false;
 	}
 
 	ER_ADDITIONALINFO info;
-	if (XmlReport::createAdditionalInfoNode(info))
-	{
-		return false;
-	}
+	XmlReport::createAdditionalInfoNode(info);
 	
 	ER_PROCESSOR processor;
 	XmlReport::createProcessorNode(processor);
@@ -90,7 +87,7 @@ bool createReportXml(
 	MODULE_LIST moduleList;
 	QString exceptionModule;
 	XmlReport::createModulesNode(
-		*modules, exceptionRecord.ExceptionAddress.toLongLong(), moduleList,
+		*modules, targetProcessExceptionAddr, moduleList,
 		exceptionModule);
 
 	exceptionRecord.ExceptionModuleName = exceptionModule;
@@ -108,11 +105,11 @@ BOOL WINAPI Dumper::miniDumpCallback(
 {
 	if (ModuleCallback == CallbackInput->CallbackType)
 	{
-		std::list<MINIDUMP_MODULE_CALLBACK>* moduleList = 
-			reinterpret_cast<std::list<MINIDUMP_MODULE_CALLBACK>*>(CallbackParam);
+		QList<MINIDUMP_MODULE_CALLBACK>* moduleList = 
+			reinterpret_cast<QList<MINIDUMP_MODULE_CALLBACK>*>(CallbackParam);
 
 		moduleList->push_back(CallbackInput->Module);
-		moduleList->rbegin()->FullPath = _wcsdup(CallbackInput->Module.FullPath);
+		moduleList->back().FullPath = _wcsdup(CallbackInput->Module.FullPath);
 	}
 
 	return TRUE;
@@ -168,19 +165,19 @@ HANDLE Dumper::createDumpFile(const QString& processName, const QString& dumpDir
 	return dumpFile;
 }
 
-BOOL Dumper::dump(const DumpeeArg& arg)
+int Dumper::dump(const DumpeeArg& arg)
 {
 	DumpeeArg dumpeeArg = arg;
 
 	std::shared_ptr<void> process( 
-		::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ | PROCESS_DUP_HANDLE, 
+		::OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 
 			FALSE, dumpeeArg.PID), ::CloseHandle);
 	if (!process)
 	{
 		return -1;
 	}
 
-	QString processName = getProcessName(process.get());
+	QString processName = QFileInfo(getProcessName(process.get())).baseName();
 	QString dumpDir = createDumpDir();
 	if (dumpeeArg.DumpFile == INVALID_HANDLE_VALUE)
 	{
@@ -212,14 +209,14 @@ BOOL Dumper::dump(const DumpeeArg& arg)
 		new QList<MINIDUMP_MODULE_CALLBACK>());
 	if (pMiniDumpWriteDump != NULL)
 	{
-		MINIDUMP_CALLBACK_INFORMATION cbMiniDump = {0};
-		cbMiniDump.CallbackRoutine = miniDumpCallback;
-		cbMiniDump.CallbackParam = modules.get();
+		MINIDUMP_CALLBACK_INFORMATION callbackInfo = {0};
+		callbackInfo.CallbackRoutine = miniDumpCallback;
+		callbackInfo.CallbackParam = modules.get();
 
 		dumpSuccess = pMiniDumpWriteDump(
 			process.get(), dumpeeArg.PID, dumpeeArg.DumpFile, 
 			dumpeeArg.FullDump ? DumpTypeFull : DumpTypeMini,
-			(dumpeeArg.Exp == 0 ? NULL : &info), NULL, NULL);
+			(dumpeeArg.Exp == 0 ? NULL : &info), NULL, &callbackInfo);
 
 		if (dumpSuccess == FALSE)
 		{
@@ -227,7 +224,7 @@ BOOL Dumper::dump(const DumpeeArg& arg)
 			dumpSuccess = pMiniDumpWriteDump(
 				process.get(), dumpeeArg.PID, dumpeeArg.DumpFile, 
 				dumpeeArg.FullDump ? MiniDumpWithFullMemory : MiniDumpNormal,
-				(dumpeeArg.Exp == 0 ? NULL : &info), NULL, NULL);
+				(dumpeeArg.Exp == 0 ? NULL : &info), NULL, &callbackInfo);
 		}
 	}
 
@@ -243,25 +240,25 @@ BOOL Dumper::dump(const DumpeeArg& arg)
 	return -2;
 }
 
-bool Dumper::getArgValue(const wchar_t* arg, const wchar_t* argKey, std::wstring* outArgValue)
+bool Dumper::getArgValue(const char* arg, const char* argKey, QString* outArgValue)
 {
 	if (arg == nullptr || argKey == nullptr || outArgValue == nullptr)
 	{
 		return false;
 	}
 
-	std::wstring s(arg);
-	auto pos = s.find(argKey);
-	if (pos != std::wstring::npos)
+	QString s(arg);
+	auto pos = s.indexOf(argKey);
+	if (pos != -1)
 	{
-		*outArgValue = s.substr(pos + std::wcslen(argKey), std::wstring::npos);
+		*outArgValue = s.mid(pos + QString(argKey).length());
 		return true;
 	}
 
 	return false;
 }
 
-bool Dumper::parseDumpeeArg(int argc, wchar_t* argv[], DumpeeArg* outDumpeeArg)
+bool Dumper::parseDumpeeArg(int argc, char* argv[], DumpeeArg* outDumpeeArg)
 {
 	if (argc < MandatoryArgCount)
 	{
@@ -276,7 +273,7 @@ bool Dumper::parseDumpeeArg(int argc, wchar_t* argv[], DumpeeArg* outDumpeeArg)
 	int parseResult = 0;
 	DWORD pid = -1;
 	DWORD tid = -1;
-	DWORD exp = -1;
+	ULONG64 exp = 0;
 	bool fullDump = false;
 	HANDLE dumpFile = INVALID_HANDLE_VALUE;
 
@@ -284,55 +281,44 @@ bool Dumper::parseDumpeeArg(int argc, wchar_t* argv[], DumpeeArg* outDumpeeArg)
 	{
 		if (!(parseResult & ParseResultPID))
 		{
-			std::wstring value;
+			QString value;
 			if (getArgValue(argv[i], ArgProcessID, &value))
 			{
 				parseResult |= ParseResultPID;
-				pid = _wtoi(value.c_str());
+				pid = value.toUInt();
 				continue;
 			}
 		}
 
 		if (!(parseResult & ParseResultTID))
 		{
-			std::wstring value;
+			QString value;
 			if (getArgValue(argv[i], ArgThreadID, &value))
 			{
 				parseResult |= ParseResultTID;
-				tid = _wtoi(value.c_str());
+				tid = value.toUInt();
 				continue;
 			}
 		}
 
 		if (!(parseResult & ParseResultExp))
 		{
-			std::wstring value;
+			QString value;
 			if (getArgValue(argv[i], ArgExceptionPointer, &value))
 			{
 				parseResult |= ParseResultExp;
-				exp = _wtoi(value.c_str());
+				exp = value.toULongLong();
 				continue;
 			}
 		}
 
 		if (!(parseResult & ParseResultFullDump))
 		{
-			std::wstring value;
+			QString value;
 			if (getArgValue(argv[i], ArgFullDump, &value))
 			{
 				parseResult |= ParseResultFullDump;
 				fullDump = true;
-				continue;
-			}
-		}
-
-		if (!(parseResult & ParseResultDumpFileHandle))
-		{
-			std::wstring value;
-			if (getArgValue(argv[i], ArgDumpFileHandle, &value))
-			{
-				parseResult |= ParseResultDumpFileHandle;
-				dumpFile = reinterpret_cast<HANDLE>(_wtoi(value.c_str()));
 				continue;
 			}
 		}
@@ -359,8 +345,6 @@ dumper.exe
 	-pid=%d		必须，指定进程id
 	-tid=%d		必须，线程id，如果没有传0
 	-exp=%d		必须，异常指针，如果没有传0
-	-h=%d		可选，dump文件句柄，需要用可继承方式打开文件，程序不负责文件创建、打开、关闭
-				如果没有，会在temp目录下新建guid文件夹内写dump
 	-f			可选，指定fulldump，否则默认minidump
 
 返回值
@@ -370,14 +354,14 @@ dumper.exe
 -2	minidumpwritedump函数调用失败
 -3  dbghelp.dll加载不成功
 */
-int main(int argc, wchar_t* argv[])
+int main(int argc, char* argv[])
 {
 	if (argc >= MandatoryArgCount)
 	{
 		DumpeeArg arg = {};
 		if (Dumper::parseDumpeeArg(argc, argv, &arg))
 		{
-			BOOL ret = Dumper::dump(arg);
+			int ret = Dumper::dump(arg);
 			return ret;
 		}		
 	}

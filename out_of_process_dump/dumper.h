@@ -9,7 +9,7 @@ struct DumpeeArg
 {
 	DWORD PID;
 	DWORD TID;
-	DWORD Exp;
+	ULONG64 Exp;
 	HANDLE DumpFile;
 	bool FullDump;
 };
@@ -26,10 +26,10 @@ public:
 	static QString getProcessName(HANDLE process);
 	static HANDLE createDumpFile(
 		const QString& processName, const QString& dumpDir);
-	static BOOL dump(const DumpeeArg& arg);
+	static int dump(const DumpeeArg& arg);
 	static bool getArgValue(
-		const wchar_t* arg, const wchar_t* argKey, std::wstring* outArgValue);
-	static bool parseDumpeeArg(int argc, wchar_t* argv[], DumpeeArg* outDumpeeArg);
+		const char* arg, const char* argKey, QString* outArgValue);
+	static bool parseDumpeeArg(int argc, char* argv[], DumpeeArg* outDumpeeArg);
 };
 
 #endif

@@ -81,8 +81,8 @@ public:
 	// 注意，异常记录指针EXCEPTION_RECORD是目标进程地址，函数内使用readprocessmemory获取其内容
 	static bool createExceptionRecordNode(
 		HANDLE targetProcess, EXCEPTION_RECORD* pExceptionRecord, 
-		ER_EXCEPTIONRECORD& outRecord);
-	static bool createAdditionalInfoNode(ER_ADDITIONALINFO& outInfo);
+		ER_EXCEPTIONRECORD& outRecord, ULONG64& outTargetProcessExceptionAddr);
+	static void createAdditionalInfoNode(ER_ADDITIONALINFO& outInfo);
 	static void createProcessorNode(ER_PROCESSOR& outProcessor);
 	static void createOSNode(ER_OPERATINGSYSTEM& outOS);
 	static void createMemoryNode(ER_MEMORY& outMemory);

@@ -7,14 +7,38 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QSettings>
+#include <QTextStream>
+#include <psapi.h>
+
+namespace
+{
+QString FormatLastWriteFileTime(const QString& fileName)
+{
+	std::shared_ptr<void> file(
+		::CreateFileA(fileName.toStdString().c_str(), GENERIC_READ, 0, NULL, 
+		OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL), ::CloseHandle);
+
+	FILETIME ft = {};
+	::GetFileTime(file.get(), NULL, NULL, &ft);
+
+	SYSTEMTIME st = {};
+	FileTimeToSystemTime(&ft, &st);
+	QString ret;
+	ret.sprintf("%02u/%02u/%04u %02u:%02u:%02u",
+		st.wMonth, st.wDay,    st.wYear,
+		st.wHour,  st.wMinute, st.wSecond);
+
+	return ret;
+}
+}
 
 bool XmlReport::createExceptionRecordNode(
 	HANDLE targetProcess, EXCEPTION_RECORD* pExceptionRecord, 
-	ER_EXCEPTIONRECORD& outRecord)
+	ER_EXCEPTIONRECORD& outRecord, ULONG64& outTargetProcessExceptionAddr)
 {
 	EXCEPTION_RECORD r = {};
 	SIZE_T readed = 0;
-	if (::ReadProcessMemory(targetProcess, pExceptionRecord, &r, sizeof(r), &readed))
+	if (::ReadProcessMemory(targetProcess, pExceptionRecord, &r, sizeof(r), &readed) == 0)
 	{
 		return false;
 	}
@@ -22,7 +46,7 @@ bool XmlReport::createExceptionRecordNode(
 	const size_t nameLen = 512;
 	std::unique_ptr<char[]> name(new char[nameLen]);
 	memset(name.get(), 0, nameLen * sizeof(name.get()[0]));
-	::GetModuleFileNameA(NULL, name.get(), nameLen);
+	::GetModuleFileNameExA(targetProcess, NULL, name.get(), nameLen);
 	outRecord.ModuleName = name.get();
 	
 	outRecord.ExceptionCode = QString("0x%1").arg(r.ExceptionCode, 8, 16, QChar('0'));
@@ -101,12 +125,13 @@ bool XmlReport::createExceptionRecordNode(
 	}
 
 	outRecord.ExceptionAddress = QString("0x%1").arg(
-		reinterpret_cast<unsigned int>(r.ExceptionAddress), 8, 16, QChar('0'));
+		reinterpret_cast<ULONG64>(r.ExceptionAddress), 16, 16, QChar('0'));
+	outTargetProcessExceptionAddr = reinterpret_cast<ULONG64>(r.ExceptionAddress);
 
 	return true;
 }
 
-bool XmlReport::createAdditionalInfoNode(ER_ADDITIONALINFO& outInfo)
+void XmlReport::createAdditionalInfoNode(ER_ADDITIONALINFO& outInfo)
 {
 	QString infoGuid;
 	QString distSrc;
@@ -128,15 +153,8 @@ bool XmlReport::createAdditionalInfoNode(ER_ADDITIONALINFO& outInfo)
 		distSrc = qVar.toString();
 	}
 
-	if (infoGuid.isEmpty() || distSrc.isEmpty())
-	{
-		return false;
-	}
-
 	outInfo.Guid = infoGuid;
 	outInfo.DistSrc = distSrc;
-
-	return true;
 }
 
 void XmlReport::createProcessorNode( ER_PROCESSOR& outProcessor )
@@ -320,7 +338,7 @@ void XmlReport::createModulesNode(
 		const MINIDUMP_MODULE_CALLBACK& m)
 	{
 		ER_MODULE module;
-		module.FullPath.fromStdWString(m.FullPath);
+		module.FullPath = QString::fromStdWString(m.FullPath);
 
 		module.BaseAddress = QString("0x%1").arg(m.BaseOfImage, 8, 16, QChar('0'));
 		module.Size = QString("0x%1").arg(m.SizeOfImage, 8, 16, QChar('0'));
@@ -331,9 +349,7 @@ void XmlReport::createModulesNode(
 			outExceptionModule = module.FullPath;
 		}
 
-		QFileInfo fileInfo(module.FullPath);
-		QDateTime lastMod = fileInfo.lastModified();
-		module.TimeStamp = lastMod.toString("MM/dd/yyyy hh:mm:ss");
+		module.TimeStamp = FormatLastWriteFileTime(module.FullPath);
 
 		module.FileVersion = 
 			QString("%1.%2.%3.%4").
@@ -358,7 +374,103 @@ bool XmlReport::createInformationLog(
 	const ER_ADDITIONALINFO& info, const ER_PROCESSOR& processor, 
 	const ER_OPERATINGSYSTEM& os, const ER_MEMORY& memory, const MODULE_LIST& modules)
 {
-	return false;
+	//
+	// 生成 XML 文件的名字。
+	//
+	QString logFileName("InforLog.xml");
+
+	QString filePath = dir + "\\" + logFileName;
+	QFile logFile(filePath);
+	bool opened = 
+		logFile.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text);
+	if (!opened)
+	{
+		return false;
+	}
+
+	// 写 XML 文件的头。
+	QTextStream xmlStream(&logFile);
+	xmlStream << "<Exception>";
+	//
+	// 生成 ExceptionRecord 节点。
+	//
+	QString xRecord = QString(
+		"<ExceptionRecord ModuleName=\"%1\" "
+		"ExceptionCode=\"%2\" "
+		"ExceptionDescription=\"%3\" "
+		"ExceptionAddress=\"%4\" "
+		"ExceptionModuleName=\"%5\" "
+		"/>").arg(exceptionRecord.ModuleName)
+		.arg(exceptionRecord.ExceptionCode)
+		.arg(exceptionRecord.ExceptionDescription)
+		.arg(exceptionRecord.ExceptionAddress)
+		.arg(exceptionRecord.ExceptionModuleName);
+	xmlStream << xRecord;
+
+	QString xInfo = QString( 
+		"<AdditionalInfomation Guid=\"%1\" DistSrc=\"%2\"/>").arg(info.Guid).arg(info.DistSrc);
+	xmlStream << xInfo;
+
+	//
+	// 生成 Processor 节点。
+	//
+	QString xProcessor = QString(
+		"<Processor Architecture=\"%1\" Level=\"%2\" NumberOfProcessors=\"%3\"/>")
+		.arg(processor.Architecture).arg(processor.Level)
+		.arg(processor.NumberOfProcessors);
+	xmlStream << xProcessor;
+	
+	//
+	// 生成 OperatingSystem 节点。
+	//
+	QString xOS = QString(
+		"<OperatingSystem MajorVersion=\"%1\" "
+		"MinorVersion=\"%2\" "
+		"BuildNumber=\"%3\" "
+		"CSDVersion=\"%4\" "
+		"OSLanguage=\"%5\" "
+		"/>").arg(os.MajorVersion).arg(os.MinorVersion).arg(os.BuildNumber).arg(os.CSDVersion)
+		.arg(os.OSLanguage);
+	xmlStream << xOS;
+
+	//
+	// 生成 Memory 节点。
+	//
+	QString xMemory = QString(
+		"<Memory MemoryLoad=\"%1%\" "
+		"TotalPhys=\"%2 MB\" "
+		"AvailPhys=\"%3 MB\" "
+		"TotalPageFile=\"%4 MB\" "
+		"AvailPageFile=\"%5 MB\" "
+		"TotalVirtual=\"%6 MB\" "
+		"AvailVirtual=\"%7 MB\" "
+		"/>").arg(memory.MemoryLoad).arg(memory.TotalPhys).arg(memory.AvailPhys)
+		.arg(memory.TotalPageFile).arg(memory.AvailPageFile).arg(memory.TotalVirtual)
+		.arg(memory.AvailVirtual);
+	xmlStream << xMemory;
+
+	//
+	// 生成 Modules 和 Module 节点。
+	//
+	xmlStream << "<Modules>";
+	int count = modules.size();
+	for (int i = 0; i < count; ++i)
+	{
+		QString xModule = QString(
+			"<Module FullPath=\"%1\" "
+			"BaseAddress=\"%2\" "
+			"Size=\"%3\" "
+			"TimeStamp=\"%4\" "
+			"FileVersion=\"%5\" "
+			"ProductVersion=\"%6\" "
+			"/>").arg(modules[i].FullPath).arg(modules[i].BaseAddress)
+			.arg(modules[i].Size).arg(modules[i].TimeStamp).arg(modules[i].FileVersion)
+			.arg(modules[i].ProductVersion);
+		xmlStream << xModule;
+	}
+	xmlStream << "</Modules></Exception>";
+
+	return true;
 }
 
 
